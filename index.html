@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UEE Ship Registry · v0.4.9 "Beacon"</title>
+<title>UEE Ship Registry · v0.5.0 "Beacon"</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -686,6 +686,21 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.4), var(--glow-cyan);
   }
 
+
+  /* Ship card thumbnail banner */
+  .ship-card-banner {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 35%;
+    background-repeat: no-repeat;
+    opacity: 0.10;
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity 0.3s ease;
+  }
+  .ship-card:hover .ship-card-banner { opacity: 0.18; }
+  .ship-card-header, .ship-card-body { position: relative; z-index: 1; }
   .ship-card-accent {
     position: absolute; top: 0; left: 0; right: 0;
     height: 2px;
@@ -905,21 +920,25 @@
 
   .modal-close {
     position: absolute;
-    top: 20px; right: 20px;
-    width: 36px; height: 36px;
+    top: 16px; right: 16px;
+    width: 32px; height: 32px;
     display: flex; align-items: center; justify-content: center;
-    background: none;
+    background: var(--bg-panel);
     border: 1px solid var(--border-dim);
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 18px;
+    font-size: 16px;
     transition: all 0.2s ease;
-    clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+    z-index: 10;
   }
-  .modal-close:hover { color: var(--accent-red); border-color: rgba(255,68,68,0.4); }
+  .modal-close:hover { color: var(--accent-cyan); border-color: var(--border-primary); }
 
   .modal-body { padding: 24px 32px 32px; }
   /* Ship image banner in modal */
+  @keyframes banner-pan {
+    from { background-position: 45% 35%; }
+    to   { background-position: 55% 30%; }
+  }
   .modal-header {
     position: relative;
     overflow: hidden;
@@ -928,11 +947,12 @@
     position: absolute;
     inset: 0;
     background-size: cover;
-    background-position: center 30%;
+    background-position: 45% 35%;
     background-repeat: no-repeat;
-    opacity: 0.13;
+    opacity: 0.18;
     pointer-events: none;
     z-index: 0;
+    animation: banner-pan 10s ease-in-out infinite alternate;
   }
   .modal-banner::after {
     content: '';
@@ -940,7 +960,8 @@
     inset: 0;
     background: linear-gradient(
       to bottom,
-      transparent 30%,
+      rgba(0,0,0,0.1) 0%,
+      transparent 40%,
       var(--bg-panel) 100%
     );
   }
@@ -1678,6 +1699,227 @@
   .pg-jump-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .pg-jump-input:focus { border-color: var(--accent-cyan); }
 
+
+  /* =========================================
+     COMPARE FEATURE CSS START
+  ========================================= */
+  /* Compare bar */
+  .compare-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 0 10px;
+    border-top: 1px solid var(--border-dim);
+    margin-top: 4px;
+  }
+  .compare-bar-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--accent-cyan);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .compare-bar-hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    opacity: 0.6;
+  }
+  .compare-slot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(0,212,255,0.06);
+    border: 1px solid rgba(0,212,255,0.2);
+    clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-cyan);
+    letter-spacing: 1px;
+  }
+  .compare-slot-name { white-space: nowrap; }
+  .compare-slot-remove {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-dim); font-size: 10px; padding: 0;
+    transition: color 0.15s;
+  }
+  .compare-slot-remove:hover { color: var(--accent-cyan); }
+  .compare-go-btn {
+    padding: 6px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--bg-void);
+    background: var(--accent-cyan);
+    border: none;
+    cursor: pointer;
+    clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+    transition: opacity 0.2s;
+  }
+  .compare-go-btn.disabled { opacity: 0.35; cursor: default; }
+  .compare-clear-btn {
+    padding: 6px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    cursor: pointer;
+    clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+    transition: all 0.2s;
+  }
+  .compare-clear-btn:hover { color: var(--text-primary); border-color: var(--border-primary); }
+
+  /* Compare overlay & panel */
+  .compare-overlay {
+    position: fixed; inset: 0; z-index: 1100;
+    background: rgba(0,0,0,0.88);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .compare-panel {
+    position: relative;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-primary);
+    width: 100%; max-width: 900px;
+    max-height: 88vh;
+    overflow-y: auto;
+    clip-path: polygon(0 0, calc(100% - 32px) 0, 100% 32px, 100% 100%, 32px 100%, 0 calc(100% - 32px));
+    box-shadow: 0 0 80px rgba(0,212,255,0.12);
+  }
+  .compare-panel-top-bar {
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), var(--accent-gold), transparent);
+  }
+  .compare-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid var(--border-dim);
+  }
+  .compare-panel-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent-cyan);
+    text-transform: uppercase;
+  }
+
+  /* Column headers with ship images */
+  .cmp-headers {
+    display: grid;
+    gap: 1px;
+    padding: 0 24px;
+    margin-top: 16px;
+    margin-left: 180px; /* offset for row labels */
+  }
+  .cmp-col-header {
+    text-align: center;
+    padding-bottom: 12px;
+  }
+  .cmp-ship-img {
+    height: 90px;
+    background-size: cover;
+    background-position: center 35%;
+    background-repeat: no-repeat;
+    opacity: 0.75;
+    margin-bottom: 8px;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+  .cmp-ship-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+  }
+  .cmp-ship-mfr {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+    margin-top: 2px;
+  }
+
+  /* Rows */
+  .cmp-rows { padding: 8px 24px 32px; }
+  .cmp-row {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--border-dim);
+  }
+  .cmp-row:last-child { border-bottom: none; }
+  .cmp-row-label {
+    flex: 0 0 180px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    padding: 10px 16px 10px 0;
+    display: flex;
+    align-items: center;
+  }
+  .cmp-row-vals {
+    flex: 1;
+    display: grid;
+    gap: 1px;
+  }
+  .cmp-cell {
+    padding: 10px 12px;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.01);
+    line-height: 1.4;
+    text-align: center;
+  }
+  .cmp-cell.cmp-best {
+    color: var(--accent-cyan);
+    background: rgba(0,212,255,0.05);
+    font-weight: 600;
+  }
+  .cmp-row:hover .cmp-row-label { color: var(--text-secondary); }
+  .cmp-row:hover .cmp-cell { background: rgba(255,255,255,0.02); }
+
+  /* Compare button in modal */
+  .modal-compare-row {
+    padding: 12px 0 4px;
+    border-top: 1px solid var(--border-dim);
+    margin-top: 6px;
+  }
+  .modal-compare-btn {
+    width: 100%;
+    padding: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: var(--bg-void);
+    border: 1px dashed var(--border-dim);
+    cursor: pointer;
+    clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+    transition: all 0.2s ease;
+  }
+  .modal-compare-btn:hover { color: var(--accent-cyan); border-color: var(--accent-cyan); border-style: solid; }
+  .modal-compare-btn.active {
+    color: var(--accent-cyan);
+    background: rgba(0,212,255,0.06);
+    border-color: rgba(0,212,255,0.4);
+    border-style: solid;
+  }
+  /* =========================================
+     COMPARE FEATURE CSS END
+  ========================================= */
+
   /* App footer */
   .app-footer {
     text-align: center;
@@ -1828,7 +2070,7 @@
       ACCESS DATABASE
       <span class="enter-btn-arrow">›</span>
     </button>
-    <div class="enter-version">v0.4.9 &nbsp;"BEACON"</div>
+    <div class="enter-version">v0.5.0 &nbsp;"BEACON"</div>
   </div>
 </div>
 
@@ -1876,7 +2118,7 @@
         <circle cx="16" cy="16" r="3" fill="#00d4ff"/>
       </svg>
       <div class="header-title">UEE <span>SHIP</span> REGISTRY</div>
-      <div class="header-version">v0.4.9 &nbsp;·&nbsp; BEACON</div>
+      <div class="header-version">v0.5.0 &nbsp;·&nbsp; BEACON</div>
     </div>
     <div class="header-nav">
       <div class="header-stat">VESSELS <strong id="h-count">245</strong></div>
@@ -1896,7 +2138,7 @@
 
     <div class="search-bar-wrap">
       <span class="search-icon">⌕</span>
-      <input type="text" id="search-input" placeholder="Search ships, manufacturers, classes..." autocomplete="off"/>
+      <input type="text" id="search-input" placeholder="Search ships, manufacturers, classes...  [ / ]" autocomplete="off"/>
     </div>
 
     <div class="search-mode-tabs">
@@ -1957,6 +2199,9 @@
       <button class="fleet-new-btn" id="fleet-new-btn" onclick="startNewFleet()">+ NEW FLEET</button>
     </div>
     <!-- FLEET BUILDER END -->
+    <!-- COMPARE FEATURE START -->
+    <div id="compare-bar" class="compare-bar" style="display:none"></div>
+    <!-- COMPARE FEATURE END -->
     <div class="results-header">
       <div class="results-count"><span id="result-count">0</span> RESULTS</div>
       <div class="sort-controls">
@@ -1973,6 +2218,20 @@
   </div>
 </div>
 
+<!-- COMPARE FEATURE START -->
+<div id="compare-overlay" class="compare-overlay" onclick="if(event.target===this)closeCompare()" style="display:none">
+  <div class="compare-panel">
+    <div class="compare-panel-top-bar"></div>
+    <div class="compare-panel-header">
+      <div class="compare-panel-title">// VESSEL COMPARISON</div>
+      <button class="modal-close" onclick="closeCompare()">✕</button>
+    </div>
+    <div class="cmp-headers" style="display:grid;gap:1px"></div>
+    <div class="cmp-rows"></div>
+  </div>
+</div>
+<!-- COMPARE FEATURE END -->
+
 <!-- Changelog Modal -->
 <div class="changelog-overlay" id="changelog-modal" onclick="closeChangelog()" style="display:none">
   <div class="changelog-box" onclick="event.stopPropagation()">
@@ -1983,7 +2242,7 @@
     <div class="changelog-entries">
 
       <div class="cl-entry">
-        <div class="cl-version">v0.4.9</div>
+        <div class="cl-version">v0.5.0</div>
         <div class="cl-date">Current</div>
         <div class="cl-tag tag-new">NEW</div>
         <ul class="cl-list">
@@ -3224,9 +3483,11 @@ function shipCardHTML(s, i) {
   const hasNote = !!hangarNotes[s.ship.toLowerCase()];
   const noteDot = hasNote ? '<span class="note-dot">✎</span>' : '';
 
+  const cardImg = SHIP_IMAGES[s.ship] ? `ship_images/${encodeURIComponent(SHIP_IMAGES[s.ship])}` : null;
   return `<div class="ship-card" onclick="openModal(${SHIPS.indexOf(s)})">
     <div class="ship-card-accent"></div>
     <div class="ship-card-corner"></div>
+    ${cardImg ? `<div class="ship-card-banner" style="background-image:url('${cardImg}')"></div>` : ''}
     <div class="ship-card-header">
       <span class="ship-manuf-badge">${s.manufacturer.trim()}</span>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
@@ -3376,6 +3637,12 @@ function openModal(idx) {
           ${s.defenses.map(d => `<li>${d}</li>`).join('')}
         </ul>
       </div>` : ''}
+      <div class="modal-compare-row">
+        <button id="compare-btn" class="modal-compare-btn"
+          onclick="toggleCompare(${SHIPS.indexOf(s)}); this.textContent = compareList.includes(${SHIPS.indexOf(s)}) ? '✕ REMOVE FROM COMPARE' : '⇄ ADD TO COMPARE'; this.classList.toggle('active', compareList.includes(${SHIPS.indexOf(s)}))">
+          ⇄ ADD TO COMPARE
+        </button>
+      </div>
       <!-- FLEET BUILDER START -->
       <div class="modal-fleet-row">
         <div class="modal-fleet-label">ADD TO FLEET</div>
@@ -3388,6 +3655,13 @@ function openModal(idx) {
   document.body.style.overflow = 'hidden';
   // FLEET BUILDER
   renderModalFleetChips(s.ship);
+  // COMPARE — set initial button state
+  const cmpBtn = document.getElementById('compare-btn');
+  if (cmpBtn) {
+    const inCmp = compareList.includes(idx);
+    cmpBtn.textContent = inCmp ? '✕ REMOVE FROM COMPARE' : '⇄ ADD TO COMPARE';
+    cmpBtn.classList.toggle('active', inCmp);
+  }
 }
 
 function closeModal() {
@@ -3427,8 +3701,144 @@ function closeModalOutside(e) {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Escape') {
+    closeModal();
+    closeCompare();
+  }
+  // Quick search: / or Ctrl+K focuses search bar
+  if ((e.key === '/' || (e.key === 'k' && (e.ctrlKey || e.metaKey))) &&
+      document.activeElement.tagName !== 'INPUT' &&
+      document.activeElement.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    const inp = document.getElementById('search-input');
+    inp.focus();
+    inp.select();
+    // Make sure we're on the app screen
+    if (!document.getElementById('app').classList.contains('visible')) return;
+  }
 });
+// =============================================
+// COMPARE FEATURE START
+// =============================================
+let compareList = []; // array of ship indices (max 3)
+
+function toggleCompare(idx) {
+  const pos = compareList.indexOf(idx);
+  if (pos > -1) {
+    compareList.splice(pos, 1);
+  } else {
+    if (compareList.length >= 3) {
+      // Replace oldest
+      compareList.shift();
+    }
+    compareList.push(idx);
+  }
+  updateCompareBar();
+  // Refresh the button state in open modal if same ship
+  const btn = document.getElementById('compare-btn');
+  if (btn) {
+    const inCompare = compareList.includes(idx);
+    btn.textContent = inCompare ? '✕ REMOVE FROM COMPARE' : '⇄ ADD TO COMPARE';
+    btn.classList.toggle('active', inCompare);
+  }
+}
+
+function updateCompareBar() {
+  const bar = document.getElementById('compare-bar');
+  if (!bar) return;
+  if (!compareList.length) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'flex';
+  const slots = compareList.map(idx => {
+    const s = SHIPS[idx];
+    return `<div class="compare-slot">
+      <span class="compare-slot-name">${s.ship}</span>
+      <button class="compare-slot-remove" onclick="toggleCompare(${idx})">✕</button>
+    </div>`;
+  }).join('');
+  const canCompare = compareList.length >= 2;
+  bar.innerHTML = `
+    <span class="compare-bar-label">⇄ COMPARE</span>
+    ${slots}
+    ${compareList.length < 3 ? '<span class="compare-bar-hint">Add up to 3 ships</span>' : ''}
+    <button class="compare-go-btn ${canCompare ? '' : 'disabled'}" onclick="${canCompare ? 'openCompare()' : ''}" ${canCompare ? '' : 'disabled'}>VIEW COMPARISON</button>
+    <button class="compare-clear-btn" onclick="clearCompare()">CLEAR</button>`;
+}
+
+function clearCompare() {
+  compareList = [];
+  updateCompareBar();
+  closeCompare();
+}
+
+function openCompare() {
+  if (compareList.length < 2) return;
+  const ships = compareList.map(i => SHIPS[i]);
+  const overlay = document.getElementById('compare-overlay');
+
+  const fields = [
+    { key: 'price',      label: 'PRICE (USD)',    fmt: s => s.price > 0 ? '$' + s.price.toLocaleString() : '—' },
+    { key: 'maxCrew',    label: 'MAX CREW',        fmt: s => s.maxCrew },
+    { key: 'cargo',      label: 'CARGO (SCU)',      fmt: s => s.cargo > 0 ? s.cargo.toLocaleString() : '—' },
+    { key: 'shipClass',  label: 'SHIP CLASS',       fmt: s => s.shipClass },
+    { key: 'classWeight',label: 'CLASS WEIGHT',     fmt: s => s.classWeight.replace('*','') },
+    { key: 'hangarReq',  label: 'PAD REQUIRED',     fmt: s => s.hangarReq },
+    { key: 'status',     label: 'STATUS',            fmt: s => s.status },
+    { key: 'carrierCapable', label: 'CARRIER CLASS', fmt: s => (s.carrierCapable === 'Y' && s.classWeight.toLowerCase().includes('large')) ? 'Yes' : 'No' },
+    { key: 'onboardHangar', label: 'ONBOARD HANGAR', fmt: s => s.onboardHangar || '—' },
+    { key: 'armament',   label: 'ARMAMENT',          fmt: s => s.armament && s.armament.length ? s.armament.join('<br>') : '—' },
+    { key: 'defenses',   label: 'DEFENSES',          fmt: s => s.defenses && s.defenses.length ? s.defenses.join('<br>') : '—' },
+  ];
+
+  // Find best values for highlighting
+  const bestPrice  = Math.min(...ships.filter(s=>s.price>0).map(s=>s.price));
+  const bestCrew   = Math.max(...ships.map(s=>s.maxCrew));
+  const bestCargo  = Math.max(...ships.map(s=>s.cargo||0));
+
+  const colWidth = ships.length === 2 ? '1fr 1fr' : '1fr 1fr 1fr';
+
+  const headers = ships.map(s => {
+    const img = SHIP_IMAGES[s.ship] ? `ship_images/${encodeURIComponent(SHIP_IMAGES[s.ship])}` : null;
+    return `<div class="cmp-col-header">
+      ${img ? `<div class="cmp-ship-img" style="background-image:url('${img}')"></div>` : ''}
+      <div class="cmp-ship-name">${s.ship}</div>
+      <div class="cmp-ship-mfr">${s.manufacturer.trim()}</div>
+    </div>`;
+  }).join('');
+
+  const rows = fields.map(f => {
+    const vals = ships.map(s => {
+      const raw = f.fmt(s);
+      let highlight = '';
+      if (f.key === 'price' && s.price === bestPrice && s.price > 0) highlight = 'cmp-best';
+      if (f.key === 'maxCrew' && s.maxCrew === bestCrew) highlight = 'cmp-best';
+      if (f.key === 'cargo' && (s.cargo||0) === bestCargo && bestCargo > 0) highlight = 'cmp-best';
+      return `<div class="cmp-cell ${highlight}">${raw}</div>`;
+    }).join('');
+    return `<div class="cmp-row">
+      <div class="cmp-row-label">${f.label}</div>
+      <div class="cmp-row-vals" style="grid-template-columns:${colWidth}">${vals}</div>
+    </div>`;
+  }).join('');
+
+  overlay.querySelector('.cmp-headers').style.gridTemplateColumns = colWidth;
+  overlay.querySelector('.cmp-headers').innerHTML = headers;
+  overlay.querySelector('.cmp-rows').innerHTML = rows;
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCompare() {
+  const overlay = document.getElementById('compare-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+// =============================================
+// COMPARE FEATURE END
+// =============================================
+
 // =============================================
 // FLEET BUILDER START
 // =============================================
