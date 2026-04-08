@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UEE Ship Registry · v0.4.5 "Beacon"</title>
+<title>UEE Ship Registry · v0.4.7 "Beacon"</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1828,7 +1828,7 @@
       ACCESS DATABASE
       <span class="enter-btn-arrow">›</span>
     </button>
-    <div class="enter-version">v0.4.5 &nbsp;"BEACON"</div>
+    <div class="enter-version">v0.4.7 &nbsp;"BEACON"</div>
   </div>
 </div>
 
@@ -1876,7 +1876,7 @@
         <circle cx="16" cy="16" r="3" fill="#00d4ff"/>
       </svg>
       <div class="header-title">UEE <span>SHIP</span> REGISTRY</div>
-      <div class="header-version">v0.4.5 &nbsp;·&nbsp; BEACON</div>
+      <div class="header-version">v0.4.7 &nbsp;·&nbsp; BEACON</div>
     </div>
     <div class="header-nav">
       <div class="header-stat">VESSELS <strong id="h-count">245</strong></div>
@@ -1983,7 +1983,7 @@
     <div class="changelog-entries">
 
       <div class="cl-entry">
-        <div class="cl-version">v0.4.5</div>
+        <div class="cl-version">v0.4.7</div>
         <div class="cl-date">Current</div>
         <div class="cl-tag tag-new">NEW</div>
         <ul class="cl-list">
@@ -3450,11 +3450,11 @@ function renderFleetPills() {
   pillsEl.innerHTML = names.map(name => {
     const count = (fleets[name] || []).length;
     const isActive = activeFleetFilter === name;
-    const safeName = name.replace(/'/g, "\'");
+    const safeAttr = name.replace(/"/g, '&quot;');
     return `<span class="fleet-pill ${isActive ? 'active' : ''}">
-      <span class="fleet-pill-name" onclick="toggleFleetFilter('${safeName}')">${name}</span>
+      <span class="fleet-pill-name" data-fleet="${safeAttr}" onclick="toggleFleetFilter(this.dataset.fleet)">${name}</span>
       <span class="fleet-pill-count">${count}</span>
-      <button class="fleet-pill-del" onclick="deleteFleet('${safeName}')" title="Delete fleet">✕</button>
+      <button class="fleet-pill-del" data-fleet="${safeAttr}" onclick="deleteFleet(this.dataset.fleet)" title="Delete fleet">✕</button>
     </span>`;
   }).join('');
 }
@@ -3525,9 +3525,9 @@ function toggleShipInFleet(fleetName, shipName) {
   }
   saveFleets();
   renderFleetPills();
-  // Re-render the fleet chips in the open modal
   renderModalFleetChips(shipName);
-  render();
+  // Update card grid count without closing modal or scrolling
+  document.getElementById('result-count').textContent = filterShips().length;
 }
 
 function renderModalFleetChips(shipName) {
@@ -3540,10 +3540,11 @@ function renderModalFleetChips(shipName) {
   }
   el.innerHTML = names.map(name => {
     const inFleet = (fleets[name] || []).includes(shipName);
-    const safe = name.replace(/'/g, "\'");
-    const safeship = shipName.replace(/'/g, "\'");
+    // Use data attributes to avoid quote-escaping issues in onclick
     return `<button class="modal-fleet-chip ${inFleet ? 'in-fleet' : ''}"
-      onclick="toggleShipInFleet('${safe}', '${safeship}')">${name}</button>`;
+      data-fleet="${name.replace(/"/g, '&quot;')}"
+      data-ship="${shipName.replace(/"/g, '&quot;')}"
+      onclick="toggleShipInFleet(this.dataset.fleet, this.dataset.ship)">${name}</button>`;
   }).join('');
 }
 
