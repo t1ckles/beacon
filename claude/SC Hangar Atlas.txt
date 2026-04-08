@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Star Citizen — Hangar Manager v1.3.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Share+Tech+Mono&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #090c10;
+    --bg2: #0d1117;
+    --bg3: #111820;
+    --border: rgba(0,210,255,0.15);
+    --border-bright: rgba(0,210,255,0.4);
+    --accent: #00d2ff;
+    --accent2: #00ff9d;
+    --accent-dim: rgba(0,210,255,0.08);
+    --text: #c8d8e8;
+    --text-dim: #5a7a8a;
+    --text-bright: #e8f4ff;
+    --danger: #ff4d6d;
+    --ship-color: #00d2ff;
+    --upgrade-color: #c77dff;
+    --other-color: #48cae4;
+    --pack-color: #f4a261;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,210,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,210,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+
+  .logo-block h1 {
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 20px rgba(0,210,255,0.4);
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .app-version {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    font-weight: 400;
+    color: var(--accent);
+    background: rgba(0,210,255,0.07);
+    border: 1px solid rgba(0,210,255,0.22);
+    border-radius: 4px;
+    padding: 2px 7px;
+    letter-spacing: 0.1em;
+    opacity: 0.75;
+    text-shadow: none;
+  }
+
+  .logo-block .sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .loaded-file {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--accent2);
+    background: rgba(0,255,157,0.06);
+    border: 1px solid rgba(0,255,157,0.2);
+    border-radius: 4px;
+    padding: 1px 8px;
+    letter-spacing: 0.04em;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-transform: none;
+  }
+  .loaded-file.visible { display: flex; }
+  .loaded-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent2);
+    flex-shrink: 0;
+    animation: blink 2.5s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+  /* ── Fleet Stats Panels ── */
+  .fleet-stats-wrap {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+  }
+
+  .fleet-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+    min-width: 160px;
+  }
+  .fleet-panel.active-panel { border-color: rgba(0,210,255,0.28); }
+  .fleet-panel.buyback-panel { border-color: rgba(255,77,109,0.22); }
+
+  .fleet-panel-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0.38rem 0.7rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .fleet-panel.active-panel .fleet-panel-toggle:hover  { background: rgba(0,210,255,0.06); }
+  .fleet-panel.buyback-panel .fleet-panel-toggle:hover { background: rgba(255,77,109,0.06); }
+
+  .fleet-panel-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    flex: 1;
+  }
+  .active-panel  .fleet-panel-label { color: var(--accent); }
+  .buyback-panel .fleet-panel-label { color: var(--danger); }
+
+  .fleet-panel-arrow {
+    font-size: 0.45rem;
+    color: var(--text-dim);
+    transition: transform 0.2s;
+    line-height: 1;
+  }
+  .fleet-panel.open .fleet-panel-arrow { transform: rotate(90deg); }
+
+  .fleet-panel-body {
+    display: none;
+    padding: 0.4rem 0.7rem 0.6rem;
+    border-top: 1px solid var(--border);
+    gap: 0.9rem 1.2rem;
+    flex-wrap: wrap;
+  }
+  .fleet-panel.open .fleet-panel-body { display: flex; }
+
+  .stat { text-align: right; }
+  .stat-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--accent2);
+    line-height: 1;
+  }
+  .stat-num.dimmed { color: var(--text-dim); font-size: 0.95rem; }
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .stat-placeholder {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    opacity: 0.4;
+    font-style: italic;
+    margin-top: 1px;
+  }
+
+
+
+  /* ── Drop zone ── */
+  #drop-zone {
+    border: 1px dashed var(--border-bright);
+    border-radius: 8px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--accent-dim);
+    margin-bottom: 2rem;
+  }
+  #drop-zone:hover, #drop-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(0,210,255,0.12);
+  }
+  #drop-zone .dz-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.6; }
+  #drop-zone h2 {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+  #drop-zone p { font-size: 0.8rem; color: var(--text-dim); }
+  #drop-zone .browse-btn {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.5rem 1.25rem;
+    border: 1px solid var(--border-bright);
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+  }
+  #drop-zone .browse-btn:hover { background: var(--accent); color: var(--bg); }
+  #file-input { display: none; }
+
+  /* ── Main layout ── */
+  #search-area { display: none; flex: 1; min-height: 0; }
+
+  .main-layout {
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    height: 100%;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    align-self: start;
+    max-height: calc(100vh - 10rem);
+    overflow-y: auto;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 0;
+  }
+  .sidebar::-webkit-scrollbar { width: 3px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+  .sidebar-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 0 0.85rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.4rem;
+  }
+
+
+
+  .sb-section-header {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 0.5rem 0.85rem 0.3rem;
+    opacity: 0.6;
+  }
+
+  .sb-type-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0.33rem 0.85rem;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .sb-type-btn:hover { background: var(--accent-dim); }
+  .sb-type-btn.active { background: rgba(0,210,255,0.1); }
+  .sb-type-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .sb-type-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text);
+    flex: 1;
+  }
+  .sb-type-btn.active .sb-type-label { color: var(--accent); }
+  .sb-type-count {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+  }
+
+  .sb-group {}
+  .sb-top {
+    display: flex;
+    align-items: center;
+    padding: 0.33rem 0.85rem;
+    cursor: pointer;
+    transition: background 0.12s;
+    gap: 5px;
+  }
+  .sb-top:hover { background: var(--accent-dim); }
+  .sb-top.active { background: rgba(0,210,255,0.1); }
+  .sb-top-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sb-top.active .sb-top-label { color: var(--accent); }
+  .sb-count {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .sb-arrow {
+    font-size: 0.5rem;
+    color: var(--text-dim);
+    transition: transform 0.15s;
+    flex-shrink: 0;
+    width: 10px;
+    text-align: center;
+  }
+  .sb-group.open .sb-arrow { transform: rotate(90deg); }
+  .sb-subs { display: none; }
+  .sb-group.open .sb-subs { display: block; }
+  .sb-sub {
+    display: flex;
+    align-items: center;
+    padding: 0.26rem 0.85rem 0.26rem 1.5rem;
+    cursor: pointer;
+    transition: background 0.12s;
+    gap: 5px;
+  }
+  .sb-sub:hover { background: var(--accent-dim); }
+  .sb-sub.active { background: rgba(0,255,157,0.06); }
+  .sb-sub-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.63rem;
+    color: var(--text-dim);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sb-sub.active .sb-sub-label { color: var(--accent2); }
+  .sb-sub-count {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.57rem;
+    color: var(--text-dim);
+    opacity: 0.55;
+    flex-shrink: 0;
+  }
+
+  /* ── Content panel ── */
+  .content-panel {
+    min-width: 0;
+    height: calc(100vh - 10rem);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1rem 0;
+  }
+
+  .content-controls { flex-shrink: 0; }
+
+  #results-list-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 0.75rem 1rem 0.25rem;
+  }
+  #results-list-wrap::-webkit-scrollbar { width: 4px; }
+  #results-list-wrap::-webkit-scrollbar-track { background: transparent; }
+  #results-list-wrap::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+  #results-list-wrap::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* Search */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 0.75rem;
+  }
+  .search-wrap::before {
+    content: '⌕';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    font-size: 1.1rem;
+    pointer-events: none;
+    z-index: 2;
+  }
+  #search-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-bright);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 300;
+    padding: 0.65rem 2.2rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    position: relative;
+    z-index: 1;
+  }
+  #search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,210,255,0.1);
+  }
+  .search-clear-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.85rem;
+    z-index: 2;
+    line-height: 1;
+    padding: 3px 5px;
+    display: none;
+    border-radius: 3px;
+    transition: color 0.12s;
+  }
+  .search-clear-btn:hover { color: var(--danger); }
+
+  /* Recent dropdown */
+  #recent-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: var(--bg3);
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    z-index: 200;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .recent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .recent-header-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .recent-clear-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+  .recent-clear-btn:hover { color: var(--danger); }
+  .recent-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.45rem 0.75rem;
+    cursor: pointer;
+    transition: background 0.1s;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text);
+  }
+  .recent-item:hover { background: var(--accent-dim); color: var(--accent); }
+  .recent-icon { font-size: 0.65rem; opacity: 0.45; }
+
+  /* Filter row */
+  .filter-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  select {
+    flex: 1;
+    min-width: 140px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-bright);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 300;
+    padding: 0.55rem 2rem 0.55rem 0.9rem;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2300d2ff'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    cursor: pointer;
+  }
+  select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,210,255,0.1); }
+
+  /* Result bar */
+  .result-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .result-count {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.73rem;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+  .result-count span { color: var(--accent); }
+
+  .clear-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.67rem;
+    letter-spacing: 0.07em;
+    padding: 0.28rem 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .clear-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ── Cards ── */
+  #results-list { display: flex; flex-direction: column; gap: 0.45rem; }
+
+  .item-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 0.9rem;
+    display: grid;
+    grid-template-columns: 16px 28px 1fr auto auto;
+    gap: 0.4rem 0.85rem;
+    align-items: start;
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+  }
+  .item-card:hover { border-color: var(--border-bright); background: var(--bg3); }
+
+  .item-card[data-type="ship"]    { border-left: 2px solid rgba(0,210,255,0.4); }
+  .item-card[data-type="pack"]    { border-left: 2px solid rgba(244,162,97,0.5); }
+  .item-card[data-type="upgrade"] { border-left: 2px solid rgba(199,125,255,0.5); }
+  .item-card[data-type="other"]   { border-left: 2px solid rgba(72,202,228,0.25); }
+
+  .item-index {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    padding-top: 3px;
+  }
+
+  .item-body { min-width: 0; }
+
+  .item-name {
+    font-size: 0.88rem;
+    font-weight: 400;
+    color: var(--text-bright);
+    line-height: 1.4;
+    margin-bottom: 3px;
+  }
+  .item-name mark {
+    background: rgba(0,210,255,0.18);
+    color: var(--accent);
+    border-radius: 2px;
+    padding: 0 2px;
+  }
+
+  .item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .meta-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    letter-spacing: 0.04em;
+  }
+  .meta-tag.insurance { color: rgba(0,255,157,0.6); border-color: rgba(0,255,157,0.15); background: rgba(0,255,157,0.04); }
+  .meta-tag.manufacturer { color: rgba(0,210,255,0.55); border-color: rgba(0,210,255,0.12); }
+  .meta-tag.source-buyback { color: rgba(255,77,109,0.7); border-color: rgba(255,77,109,0.2); background: rgba(255,77,109,0.04); }
+  .meta-tag.upgrade-arrow { color: rgba(199,125,255,0.7); border-color: rgba(199,125,255,0.2); background: rgba(199,125,255,0.04); }
+  .meta-tag.value { color: rgba(0,255,157,0.5); border-color: rgba(0,255,157,0.1); }
+
+  .item-sub-list {
+    margin-top: 5px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .sub-chip {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+  .sub-chip mark {
+    background: rgba(0,210,255,0.18);
+    color: var(--accent);
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+
+  .item-right {
+    text-align: right;
+    padding-top: 3px;
+  }
+  .type-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    padding: 2px 6px;
+    display: inline-block;
+  }
+  .type-badge.ship    { color: var(--ship-color); background: rgba(0,210,255,0.07); border: 1px solid rgba(0,210,255,0.18); }
+  .type-badge.pack    { color: var(--pack-color); background: rgba(244,162,97,0.07); border: 1px solid rgba(244,162,97,0.2); }
+  .type-badge.upgrade { color: var(--upgrade-color); background: rgba(199,125,255,0.07); border: 1px solid rgba(199,125,255,0.2); }
+  .type-badge.other   { color: var(--other-color); background: rgba(72,202,228,0.06); border: 1px solid rgba(72,202,228,0.15); }
+
+  .item-date {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+    text-align: right;
+  }
+
+  /* ── Active asterisk ── */
+  .active-star {
+    color: #ffd166;
+    font-size: 0.75rem;
+    line-height: 1;
+    padding-top: 4px;
+    opacity: 0.85;
+    flex-shrink: 0;
+    text-shadow: 0 0 8px rgba(255,209,102,0.5);
+  }
+
+  /* ── Clickable card ── */
+  .item-card.expanded {
+    border-color: var(--border-bright);
+    background: var(--bg3);
+  }
+  .card-chevron {
+    font-size: 0.45rem;
+    color: var(--text-dim);
+    padding-top: 5px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+  .item-card.expanded .card-chevron { transform: rotate(90deg); opacity: 1; color: var(--accent); }
+
+  /* ── Accordion detail panel ── */
+  .item-detail {
+    display: none;
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    margin-top: 0.6rem;
+    padding-top: 0.75rem;
+  }
+  .item-card.expanded .item-detail { display: block; }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.6rem 1.2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .detail-section { }
+  .detail-section-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.56rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.18rem 0;
+  }
+  .detail-key {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .detail-val {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-bright);
+    text-align: right;
+    word-break: break-word;
+  }
+  .detail-val.accent  { color: var(--accent); }
+  .detail-val.green   { color: var(--accent2); }
+  .detail-val.purple  { color: var(--upgrade-color); }
+  .detail-val.orange  { color: var(--pack-color); }
+  .detail-val.red     { color: #ff4d6d; }
+  .detail-val.gold    { color: #ffd166; }
+
+  .detail-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 0.25rem;
+  }
+  .detail-chip {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 6px;
+  }
+  .detail-chip.ship-chip { color: var(--accent); border-color: rgba(0,210,255,0.2); background: rgba(0,210,255,0.04); }
+  .detail-chip.skin-chip { color: rgba(199,125,255,0.8); border-color: rgba(199,125,255,0.2); background: rgba(199,125,255,0.04); }
+  .detail-chip.fps-chip  { color: rgba(244,162,97,0.8); border-color: rgba(244,162,97,0.2); background: rgba(244,162,97,0.04); }
+  .detail-chip.extra-chip { color: var(--accent2); border-color: rgba(0,255,157,0.2); background: rgba(0,255,157,0.04); }
+
+
+
+
+
+  /* Empty */
+  #empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    display: none;
+  }
+  #empty-state .es-icon { font-size: 2rem; margin-bottom: 0.75rem; opacity: 0.35; }
+  #empty-state p { color: var(--text-dim); font-size: 0.85rem; }
+
+  /* Pagination */
+  #pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .page-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.68rem;
+    padding: 0.28rem 0.6rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .page-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,210,255,0.08); }
+  .page-btn:disabled { opacity: 0.3; cursor: default; }
+  .page-ellipsis { font-family: 'Share Tech Mono', monospace; font-size: 0.65rem; color: var(--text-dim); padding: 0 4px; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  @media (max-width: 720px) {
+    html, body { overflow: auto; height: auto; }
+    .page-shell { height: auto; }
+    #search-area { flex: none !important; }
+    .main-layout { grid-template-columns: 1fr; height: auto; }
+    .sidebar { height: 180px; }
+    .content-panel { height: 70vh; }
+    .item-right { display: none; }
+    .fleet-stats-wrap { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page-shell">
+
+  <header>
+    <div class="logo-block">
+      <h1>SC HANGAR MANAGER <span class="app-version">v1.3.0 — Verse</span></h1>
+      <div class="sub">
+        Star Citizen Hangar Reference
+        <span class="loaded-file" id="loaded-file">
+          <span class="loaded-dot"></span>
+          <span id="loaded-file-name"></span>
+        </span>
+      </div>
+    </div>
+    <div class="fleet-stats-wrap" id="stats-block" style="display:none">
+
+      <!-- Active Fleet Panel -->
+      <div class="fleet-panel active-panel open" id="panel-active">
+        <div class="fleet-panel-toggle" onclick="togglePanel('panel-active')">
+          <span class="fleet-panel-label">Active Fleet</span>
+          <span class="fleet-panel-arrow">▶</span>
+        </div>
+        <div class="fleet-panel-body">
+          <div class="stat">
+            <div class="stat-num" id="stat-active-value">$0</div>
+            <div class="stat-label">Fleet Value</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="stat-active-ships">0</div>
+            <div class="stat-label">Ships</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num dimmed">—</div>
+            <div class="stat-label">Crew Req.</div>
+            <div class="stat-placeholder">coming soon</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num dimmed">—</div>
+            <div class="stat-label">Cargo Cap.</div>
+            <div class="stat-placeholder">coming soon</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buyback Fleet Panel -->
+      <div class="fleet-panel buyback-panel" id="panel-buyback">
+        <div class="fleet-panel-toggle" onclick="togglePanel('panel-buyback')">
+          <span class="fleet-panel-label">Buyback</span>
+          <span class="fleet-panel-arrow">▶</span>
+        </div>
+        <div class="fleet-panel-body">
+          <div class="stat">
+            <div class="stat-num" id="stat-bb-value">$0</div>
+            <div class="stat-label">Value</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="stat-bb-ships">0</div>
+            <div class="stat-label">Ships</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="stat-bb-packs">0</div>
+            <div class="stat-label">Packs</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="stat-bb-upgrades">0</div>
+            <div class="stat-label">Upgrades</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="stat-bb-other">0</div>
+            <div class="stat-label">Other</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <div id="drop-zone">
+    <div class="dz-icon">🚀</div>
+    <h2>Load Your Hangar Export</h2>
+    <p>Drop your hangar.link JSON export here, or click to browse</p>
+    <button class="browse-btn" onclick="document.getElementById('file-input').click()">Browse File</button>
+    <input type="file" id="file-input" accept=".json">
+  </div>
+
+  <div id="search-area" style="flex:1;min-height:0;">
+    <div class="main-layout">
+
+      <aside class="sidebar">
+        <div class="sidebar-title">Navigation</div>
+
+        <div class="sb-section-header">Pledge Type</div>
+        <div id="sb-types"></div>
+
+        <div class="sb-section-header" style="margin-top:0.5rem;">Manufacturer</div>
+        <div id="sb-tree"></div>
+      </aside>
+
+      <div class="content-panel">
+        <div class="content-controls">
+          <div class="search-wrap">
+            <input type="text" id="search-input"
+              placeholder="Search hangar… (press / to focus)"
+              autocomplete="off" spellcheck="false">
+            <button class="search-clear-btn" id="search-clear-btn" title="Clear">✕</button>
+            <div id="recent-dropdown">
+              <div class="recent-header">
+                <span class="recent-header-label">Recent searches</span>
+                <button class="recent-clear-btn" id="recent-clear-btn">Clear all</button>
+              </div>
+              <div id="recent-list"></div>
+            </div>
+          </div>
+
+          <div class="filter-row">
+            <select id="type-filter"><option value="">All types</option></select>
+            <select id="mfr-filter"><option value="">All manufacturers</option></select>
+            <select id="source-filter"><option value="">Active &amp; Buyback</option><option value="Active">Active only</option><option value="Buyback">Buyback only</option></select>
+          </div>
+
+          <div class="result-bar">
+            <div class="result-count" id="result-count"></div>
+            <button class="clear-btn" onclick="clearAll()">Clear all filters</button>
+          </div>
+        </div>
+
+        <div id="results-list-wrap">
+          <div id="results-list"></div>
+          <div id="empty-state">
+            <div class="es-icon">⚠</div>
+            <p>No items match your search.</p>
+          </div>
+          <div id="pagination"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<script>
+const PAGE_SIZE = 50;
+const MAX_RECENT = 8;
+const LS_RECENT = 'sc_hangar_recent_v1';
+
+let allItems    = [];
+let filtered    = [];
+let currentPage = 1;
+let searchTerm  = '';
+let typeMap     = {};
+let mfrMap      = {};
+let activeType  = '';
+let activeMfr   = '';
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+function loadRecent()  { try { return JSON.parse(localStorage.getItem(LS_RECENT)||'[]'); } catch { return []; } }
+function saveRecent(a) { try { localStorage.setItem(LS_RECENT, JSON.stringify(a)); } catch {} }
+let recents = loadRecent();
+
+// ── File drop/pick ────────────────────────────────────────────────────────────
+const dz = document.getElementById('drop-zone');
+const fi = document.getElementById('file-input');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+});
+fi.addEventListener('change', () => { if (fi.files[0]) readFile(fi.files[0]); });
+
+function readFile(f) {
+  const r = new FileReader();
+  r.onload = e => parseHangar(e.target.result, f.name);
+  r.readAsText(f, 'utf-8');
+}
+
+// ── Parse ─────────────────────────────────────────────────────────────────────
+function parseHangar(text, filename) {
+  let raw;
+  try { raw = JSON.parse(text); } catch(e) { alert('Invalid JSON file. Please export from hangar.link and try again.'); return; }
+  if (!Array.isArray(raw) || !raw.length) { alert('No hangar data found in this file.'); return; }
+
+  allItems = raw.map((d, i) => {
+    // Collect all manufacturers from ships
+    const manufacturers = [...new Set((d.ships||[]).map(s=>s.manufacturer).filter(Boolean))];
+    const shipTitles    = (d.ships||[]).map(s=>s.title).filter(Boolean);
+    const skinTitles    = (d.skins||[]).map(s=>s.title).filter(Boolean);
+    const fpsTitles     = (d.fps_equipment||[]).map(s=>s.title).filter(Boolean);
+    const extras        = (d.hangar_extras||[]).filter(Boolean);
+
+    return {
+      id: `item_${d.pledge_id || i}`,
+      pledge_id: d.pledge_id,
+      type: d.type || 'other',
+      source: d.source || 'Active',
+      name: d.name_clean || d.name_original || '(Unknown)',
+      name_original: d.name_original || '',
+      value_usd: d.value_usd || 0,
+      date: d.date || '',
+      insurance: d.insurance || null,
+      manufacturers,
+      shipTitles,
+      skinTitles,
+      fpsTitles,
+      extras,
+      upgrade_from: d.upgrade_from || null,
+      upgrade_to: d.upgrade_to || null,
+      contains_summary: d.contains_summary || '',
+      // All searchable text pre-joined
+      _searchText: [
+        d.name_clean, d.name_original,
+        ...shipTitles, ...skinTitles, ...fpsTitles,
+        ...manufacturers, d.insurance,
+        d.upgrade_from, d.upgrade_to
+      ].filter(Boolean).join(' ').toLowerCase()
+    };
+  });
+
+  // Show loaded file
+  document.getElementById('loaded-file-name').textContent = filename;
+  document.getElementById('loaded-file').classList.add('visible');
+
+  boot();
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+function boot() {
+  document.getElementById('drop-zone').style.display = 'none';
+  document.getElementById('search-area').style.display = 'block';
+  document.getElementById('stats-block').style.display = 'flex';
+
+  const active  = allItems.filter(i => i.source === 'Active');
+  const buyback = allItems.filter(i => i.source === 'Buyback');
+
+  // Active fleet stats
+  const activeVal   = active.reduce((a,b) => a + b.value_usd, 0);
+  const activeShips = active.filter(i => i.shipTitles.length > 0).length;
+  document.getElementById('stat-active-value').textContent = '$' + Math.round(activeVal).toLocaleString();
+  document.getElementById('stat-active-ships').textContent = activeShips.toLocaleString();
+
+  // Buyback stats
+  const bbVal      = buyback.reduce((a,b) => a + b.value_usd, 0);
+  const bbShips    = buyback.filter(i => i.type === 'ship').length;
+  const bbPacks    = buyback.filter(i => i.type === 'pack').length;
+  const bbUpgrades = buyback.filter(i => i.type === 'upgrade').length;
+  const bbOther    = buyback.filter(i => i.type === 'other').length;
+  document.getElementById('stat-bb-value').textContent    = '$' + Math.round(bbVal).toLocaleString();
+  document.getElementById('stat-bb-ships').textContent    = bbShips.toLocaleString();
+  document.getElementById('stat-bb-packs').textContent    = bbPacks.toLocaleString();
+  document.getElementById('stat-bb-upgrades').textContent = bbUpgrades.toLocaleString();
+  document.getElementById('stat-bb-other').textContent    = bbOther.toLocaleString();
+
+  buildMaps();
+  buildTypeSidebar();
+  buildMfrSidebar();
+  buildDropdowns();
+  wireEvents();
+  applyFilters();
+  document.getElementById('search-input').focus();
+}
+
+// ── Panel toggle ──────────────────────────────────────────────────────────────
+function togglePanel(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ── Maps ──────────────────────────────────────────────────────────────────────
+function buildMaps() {
+  typeMap = {}; mfrMap = {};
+  allItems.forEach(item => {
+    typeMap[item.type] = (typeMap[item.type]||0) + 1;
+    item.manufacturers.forEach(m => { mfrMap[m] = (mfrMap[m]||0) + 1; });
+  });
+}
+
+// ── Sidebar: Types ────────────────────────────────────────────────────────────
+const TYPE_COLORS = { ship:'#00d2ff', pack:'#f4a261', upgrade:'#c77dff', other:'#48cae4' };
+const TYPE_LABELS = { ship:'Ships', pack:'Packs', upgrade:'Upgrades', other:'Other' };
+
+function buildTypeSidebar() {
+  const el = document.getElementById('sb-types');
+  el.innerHTML = '';
+  ['ship','pack','upgrade','other'].forEach(t => {
+    if (!typeMap[t]) return;
+    const row = document.createElement('div');
+    row.className = 'sb-type-btn';
+    row.dataset.type = t;
+    row.innerHTML = `
+      <span class="sb-type-dot" style="background:${TYPE_COLORS[t]}"></span>
+      <span class="sb-type-label">${TYPE_LABELS[t]}</span>
+      <span class="sb-type-count">${typeMap[t]}</span>`;
+    row.addEventListener('click', () => sidebarTypeSelect(t));
+    el.appendChild(row);
+  });
+}
+
+function buildMfrSidebar() {
+  const tree = document.getElementById('sb-tree');
+  tree.innerHTML = '';
+  Object.keys(mfrMap).sort().forEach(mfr => {
+    const row = document.createElement('div');
+    row.className = 'sb-top';
+    row.dataset.mfr = mfr;
+    row.innerHTML = `
+      <span class="sb-arrow"></span>
+      <span class="sb-top-label">${esc(mfr)}</span>
+      <span class="sb-count">${mfrMap[mfr]}</span>`;
+    row.addEventListener('click', () => sidebarMfrSelect(mfr));
+    tree.appendChild(row);
+  });
+}
+
+// ── Dropdowns ─────────────────────────────────────────────────────────────────
+function buildDropdowns() {
+  const typeSel = document.getElementById('type-filter');
+  const mfrSel  = document.getElementById('mfr-filter');
+  ['ship','pack','upgrade','other'].forEach(t => {
+    if (!typeMap[t]) return;
+    const o = document.createElement('option');
+    o.value = t; o.textContent = TYPE_LABELS[t]; typeSel.appendChild(o);
+  });
+  Object.keys(mfrMap).sort().forEach(m => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m; mfrSel.appendChild(o);
+  });
+}
+
+// ── Sidebar selections ────────────────────────────────────────────────────────
+function sidebarTypeSelect(t) {
+  activeType = t;
+  activeMfr  = '';
+  document.getElementById('type-filter').value = t;
+  document.getElementById('mfr-filter').value  = '';
+  updateSidebarActive();
+  currentPage = 1; applyFilters();
+}
+
+function sidebarMfrSelect(m) {
+  activeMfr  = m;
+  activeType = '';
+  document.getElementById('mfr-filter').value  = m;
+  document.getElementById('type-filter').value = '';
+  updateSidebarActive();
+  currentPage = 1; applyFilters();
+}
+
+function updateSidebarActive() {
+  document.querySelectorAll('.sb-type-btn').forEach(el => {
+    el.classList.toggle('active', el.dataset.type === activeType);
+  });
+  document.querySelectorAll('.sb-top[data-mfr]').forEach(el => {
+    el.classList.toggle('active', el.dataset.mfr === activeMfr);
+  });
+}
+
+// ── Events ────────────────────────────────────────────────────────────────────
+function wireEvents() {
+  const inp  = document.getElementById('search-input');
+  const clrX = document.getElementById('search-clear-btn');
+
+  inp.addEventListener('input', () => {
+    clrX.style.display = inp.value ? 'block' : 'none';
+    if (!inp.value && recents.length) renderRecentDropdown(true);
+    else renderRecentDropdown(false);
+    currentPage = 1; applyFilters();
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { inp.blur(); renderRecentDropdown(false); }
+    if (e.key === 'Enter' && inp.value.trim()) { pushRecent(inp.value.trim()); renderRecentDropdown(false); }
+  });
+  clrX.addEventListener('click', () => {
+    inp.value = ''; clrX.style.display = 'none'; currentPage = 1; applyFilters(); inp.focus();
+  });
+  document.getElementById('recent-clear-btn').addEventListener('click', () => {
+    recents = []; saveRecent([]); renderRecentDropdown(false);
+  });
+  document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) renderRecentDropdown(false); });
+
+  document.getElementById('type-filter').addEventListener('change', e => {
+    activeType = e.target.value; updateSidebarActive(); currentPage = 1; applyFilters();
+  });
+  document.getElementById('mfr-filter').addEventListener('change', e => {
+    activeMfr = e.target.value; updateSidebarActive(); currentPage = 1; applyFilters();
+  });
+  document.getElementById('source-filter').addEventListener('change', () => { currentPage = 1; applyFilters(); });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement !== inp && document.activeElement.tagName !== 'SELECT') {
+      e.preventDefault(); inp.focus(); inp.select();
+    }
+  });
+}
+
+// ── Recent searches ───────────────────────────────────────────────────────────
+function pushRecent(term) {
+  recents = [term, ...recents.filter(r=>r!==term)].slice(0, MAX_RECENT);
+  saveRecent(recents);
+}
+function renderRecentDropdown(show) {
+  const drop = document.getElementById('recent-dropdown');
+  if (!show || !recents.length) { drop.style.display='none'; return; }
+  document.getElementById('recent-list').innerHTML = recents.map(r =>
+    `<div class="recent-item" onclick="pickRecent(${JSON.stringify(r)})"><span class="recent-icon">↺</span>${esc(r)}</div>`
+  ).join('');
+  drop.style.display = 'block';
+}
+function pickRecent(term) {
+  const inp = document.getElementById('search-input');
+  inp.value = term;
+  document.getElementById('search-clear-btn').style.display = 'block';
+  renderRecentDropdown(false);
+  currentPage = 1; applyFilters();
+}
+
+// ── Filter ────────────────────────────────────────────────────────────────────
+function applyFilters() {
+  const q      = document.getElementById('search-input').value.toLowerCase().trim();
+  const type   = document.getElementById('type-filter').value;
+  const mfr    = document.getElementById('mfr-filter').value;
+  const source = document.getElementById('source-filter').value;
+  if (q.length > 1) pushRecent(q);
+  searchTerm = q;
+
+  filtered = allItems.filter(item => {
+    if (type   && item.type !== type) return false;
+    if (source && item.source !== source) return false;
+    if (mfr    && !item.manufacturers.includes(mfr)) return false;
+    if (!q) return true;
+    return item._searchText.includes(q);
+  });
+
+  renderPage();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderPage() {
+  const total      = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  currentPage      = Math.min(currentPage, totalPages);
+  const start      = (currentPage - 1) * PAGE_SIZE;
+  const slice      = filtered.slice(start, start + PAGE_SIZE);
+
+  const list  = document.getElementById('results-list');
+  const empty = document.getElementById('empty-state');
+
+  document.getElementById('result-count').innerHTML =
+    `Showing <span>${total.toLocaleString()}</span> pledge${total !== 1 ? 's' : ''}`;
+
+  if (!total) {
+    list.innerHTML = ''; empty.style.display = 'block';
+    document.getElementById('pagination').innerHTML = ''; return;
+  }
+  empty.style.display = 'none';
+
+  let html = '';
+  slice.forEach((c,i) => html += renderCard(c, start+i+1));
+
+  list.innerHTML = html;
+  renderPagination(totalPages);
+}
+
+function renderCard(item, num) {
+  const isActive = item.source === 'Active';
+
+  let metaHtml = '';
+  if (item.source === 'Buyback') {
+    metaHtml += `<span class="meta-tag source-buyback">Buyback</span>`;
+  }
+  if (item.insurance) {
+    metaHtml += `<span class="meta-tag insurance">${esc(item.insurance)}</span>`;
+  }
+  if (item.manufacturers.length) {
+    item.manufacturers.forEach(m => { metaHtml += `<span class="meta-tag manufacturer">${esc(m)}</span>`; });
+  }
+  if (item.upgrade_from && item.upgrade_to) {
+    metaHtml += `<span class="meta-tag upgrade-arrow">${esc(item.upgrade_from)} → ${esc(item.upgrade_to)}</span>`;
+  }
+  if (item.value_usd > 0) {
+    metaHtml += `<span class="meta-tag value">$${item.value_usd.toFixed(2)}</span>`;
+  }
+
+  // Summary sub-chips (collapsed view)
+  let subItems = [];
+  if (item.type === 'ship' || item.type === 'pack') subItems = item.shipTitles;
+  else if (item.skinTitles.length) subItems = item.skinTitles;
+  else if (item.fpsTitles.length)  subItems = item.fpsTitles;
+  const showSubs = subItems.length > 0 && (item.type === 'pack' || subItems.length > 1 || (subItems.length === 1 && subItems[0].toLowerCase() !== item.name.toLowerCase()));
+  const subHtml = showSubs
+    ? `<div class="item-sub-list">${subItems.map(s=>`<span class="sub-chip">${hl(s)}</span>`).join('')}</div>` : '';
+
+  const dateStr  = item.date ? item.date.slice(0,7) : '';
+  const fullDate = item.date || '—';
+
+  // ── Detail panel ────────────────────────────────────────────────────────────
+  let detailHtml = '<div class="item-detail"><div class="detail-grid">';
+
+  // Pledge info section
+  detailHtml += `<div class="detail-section">
+    <div class="detail-section-title">Pledge Info</div>
+    <div class="detail-row"><span class="detail-key">Pledge ID</span><span class="detail-val">${item.pledge_id || '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Type</span><span class="detail-val accent">${item.type}</span></div>
+    <div class="detail-row"><span class="detail-key">Source</span><span class="detail-val ${isActive ? 'green' : 'red'}">${item.source}</span></div>
+    <div class="detail-row"><span class="detail-key">Date</span><span class="detail-val">${fullDate}</span></div>
+    <div class="detail-row"><span class="detail-key">Value</span><span class="detail-val green">${item.value_usd > 0 ? '$' + item.value_usd.toFixed(2) : '—'}</span></div>
+  </div>`;
+
+  // Insurance / hangar extras
+  detailHtml += `<div class="detail-section">
+    <div class="detail-section-title">Insurance &amp; Extras</div>
+    <div class="detail-row"><span class="detail-key">Insurance</span><span class="detail-val green">${esc(item.insurance || '—')}</span></div>`;
+  if (item.extras.length) {
+    detailHtml += `<div class="detail-row"><span class="detail-key">Hangar Extras</span></div>
+    <div class="detail-chip-row">${item.extras.map(e=>`<span class="detail-chip extra-chip">${esc(e)}</span>`).join('')}</div>`;
+  } else {
+    detailHtml += `<div class="detail-row"><span class="detail-key">Hangar Extras</span><span class="detail-val">—</span></div>`;
+  }
+  detailHtml += `</div>`;
+
+  // Upgrade info (if applicable)
+  if (item.upgrade_from || item.upgrade_to) {
+    detailHtml += `<div class="detail-section">
+      <div class="detail-section-title">Upgrade Path</div>
+      <div class="detail-row"><span class="detail-key">From</span><span class="detail-val purple">${esc(item.upgrade_from || '—')}</span></div>
+      <div class="detail-row"><span class="detail-key">To</span><span class="detail-val accent">${esc(item.upgrade_to || '—')}</span></div>
+    </div>`;
+  }
+
+  detailHtml += `</div>`; // end detail-grid
+
+  // Ships section
+  if (item.shipTitles.length) {
+    detailHtml += `<div class="detail-section" style="margin-bottom:0.5rem;">
+      <div class="detail-section-title">Ships (${item.shipTitles.length})</div>
+      <div class="detail-chip-row">${item.shipTitles.map(s=>`<span class="detail-chip ship-chip">${esc(s)}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  // Skins section
+  if (item.skinTitles.length) {
+    detailHtml += `<div class="detail-section" style="margin-bottom:0.5rem;">
+      <div class="detail-section-title">Paints &amp; Skins (${item.skinTitles.length})</div>
+      <div class="detail-chip-row">${item.skinTitles.map(s=>`<span class="detail-chip skin-chip">${esc(s)}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  // FPS Equipment section
+  if (item.fpsTitles.length) {
+    detailHtml += `<div class="detail-section" style="margin-bottom:0.5rem;">
+      <div class="detail-section-title">FPS Equipment (${item.fpsTitles.length})</div>
+      <div class="detail-chip-row">${item.fpsTitles.map(s=>`<span class="detail-chip fps-chip">${esc(s)}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  detailHtml += `</div>`; // end item-detail
+
+  return `<div class="item-card" data-type="${item.type}" data-id="${item.id}" onclick="toggleCard(this)">
+    <span class="card-chevron">▶</span>
+    <div class="item-index">${String(num).padStart(3,'0')}</div>
+    <div class="item-body">
+      <div class="item-name">${hl(item.name)}</div>
+      ${metaHtml ? `<div class="item-meta">${metaHtml}</div>` : ''}
+      ${subHtml}
+    </div>
+    <div class="item-right">
+      <span class="type-badge ${item.type}">${item.type}</span>
+      ${dateStr ? `<div class="item-date">${dateStr}</div>` : ''}
+    </div>
+    ${isActive ? `<span class="active-star" title="Active — in your hangar">★</span>` : `<span class="active-star" style="opacity:0"></span>`}
+    ${detailHtml}
+  </div>`;
+}
+
+// ── Card toggle ───────────────────────────────────────────────────────────────
+function toggleCard(el) {
+  el.classList.toggle('expanded');
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────────
+function renderPagination(total) {
+  if (total <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+  let h = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>← Prev</button>`;
+  const range = pgRange(currentPage, total);
+  let prev = null;
+  range.forEach(p => {
+    if (prev !== null && p-prev > 1) h += `<span class="page-ellipsis">…</span>`;
+    h += `<button class="page-btn${p===currentPage?' active':''}" onclick="goPage(${p})">${p}</button>`;
+    prev = p;
+  });
+  h += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}>Next →</button>`;
+  document.getElementById('pagination').innerHTML = h;
+}
+function pgRange(cur, total) {
+  const s = new Set([1, total]);
+  for (let i=Math.max(2,cur-2); i<=Math.min(total-1,cur+2); i++) s.add(i);
+  return [...s].sort((a,b)=>a-b);
+}
+function goPage(p) { currentPage = p; renderPage(); document.getElementById('results-list-wrap').scrollTo({top:0,behavior:'smooth'}); }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function hl(text) {
+  if (!searchTerm) return esc(text);
+  const re = new RegExp('('+searchTerm.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+  return esc(text).replace(re,'<mark>$1</mark>');
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function clearAll() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-clear-btn').style.display = 'none';
+  document.getElementById('type-filter').value = '';
+  document.getElementById('mfr-filter').value  = '';
+  document.getElementById('source-filter').value = '';
+  activeType = ''; activeMfr = '';
+  document.querySelectorAll('.sb-type-btn, .sb-top').forEach(el => el.classList.remove('active'));
+  currentPage = 1; applyFilters();
+}
+</script>
+</body>
+</html>
