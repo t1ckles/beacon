@@ -2246,11 +2246,73 @@
         <div class="cl-date">Current</div>
         <div class="cl-tag tag-new">NEW</div>
         <ul class="cl-list">
-          <li>Persistent session state — filters, mode, and sort are remembered across visits</li>
+          <li>Quick Search — press <strong>/</strong> or <strong>Ctrl+K</strong> anywhere to instantly focus the search bar</li>
+          <li>Ship Comparison — add up to 3 ships via their detail modal, then open a full side-by-side panel with stats, armament, defenses, and best-value highlighting</li>
+          <li>Ship card thumbnails — faint ship image in every card background, brightens on hover</li>
+          <li>Modal banner animated pan — the ship image slowly drifts across the detail header for a cinematic feel</li>
+          <li>Modal ✕ close button fixed — clip-path was eating pointer events</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div class="cl-version">v0.4.x</div>
+        <div class="cl-date">Patch series</div>
+        <div class="cl-tag tag-new">NEW</div>
+        <ul class="cl-list">
+          <li>Armament and Defenses sections added to ship detail modal</li>
+          <li>Pre-populated armament and defense data for all 235 ships (141 HIGH confidence, 56 MED, 9 LOW)</li>
+          <li>Ship images supported in detail modal as faded banner (225 ships covered)</li>
+          <li>Full colorblind-safe color pass — replaced all red/green with amber/cyan-teal throughout</li>
+          <li>Greycat UTV added to database</li>
+          <li>View All button added to pagination controls</li>
+          <li>Fleet builder add/remove and filter now fully functional — fixed quote-escaping bugs across all fleet interactions</li>
+          <li>Fleet delete two-click confirmation rewritten to be self-contained</li>
+          <li>Hull-B updated: price $280, crew 2, Flight Ready status, armament and cargo corrected</li>
+          <li>Multiple ship data corrections: Golem class, mining cargo values (MOLE, Prospector, ROC, Orion, etc.), MOTH cargo</li>
+          <li>Armament verification spreadsheet exported with confidence flags for review</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div class="cl-version">v0.4.0</div>
+        <div class="cl-date">Milestone</div>
+        <div class="cl-tag tag-new">NEW</div>
+        <ul class="cl-list">
+          <li>Armament and Defenses fields added to all ships (empty arrays, ready for population)</li>
+          <li>Ship registry exported as Excel workbook with Armament/Defenses columns for data entry</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div class="cl-version">v0.3.x</div>
+        <div class="cl-date">Patch series</div>
+        <div class="cl-tag tag-fix">FIX</div>
+        <ul class="cl-list">
+          <li>Pagination — 48 ships per page with ◀◀ / ◀ / numbered pages / ▶ / ▶▶ controls and GO input</li>
+          <li>Snub management — 9 duplicate (snub) entries removed; SNUBS quick filter added; CARRIED SNUBS shown in parent ship modals</li>
+          <li>Hercules A2/C2/M2 renamed to Hercules (A2/C2/M2)</li>
+          <li>Carrier Class badge and info row restricted to Large/Sub-Capital/Capital ships only</li>
+          <li>Quick filter reorder: Price → Carrier Class → Cargo → Crew → Concept → Snubs</li>
+          <li>Concept quick filter added</li>
+          <li>Changelog moved to footer link — version badge reverted to static text</li>
+          <li>Multiple snub parent corrections (Constellation line, Carrack, Hercules, 600i, 890 Jump)</li>
+          <li>Duplicate Fury (MISC) entry removed</li>
+          <li>Spirit (C1), Zeus ES, Ranger CV ship class corrections</li>
+          <li>Carrier Class filter fixed in By Manufacturer mode</li>
+        </ul>
+      </div>
+
+      <div class="cl-entry">
+        <div class="cl-version">v0.3.0</div>
+        <div class="cl-date">Major update</div>
+        <div class="cl-tag tag-new">NEW</div>
+        <ul class="cl-list">
+          <li>Persistent session state — filters, mode, sort, and quick filter settings saved across visits</li>
           <li>Price range filter — set a maximum USD price to narrow results</li>
           <li>Crew filter — filter by minimum and maximum crew size</li>
           <li>Ship count badges on manufacturer chips</li>
-          <li>Version history / changelog panel (you are here)</li>
+          <li>Version history / changelog panel</li>
+          <li>Fleet Builder — create named fleets, add ships via detail modal, filter by fleet pill, two-click delete</li>
         </ul>
       </div>
 
@@ -2259,7 +2321,7 @@
         <div class="cl-date">Patch series</div>
         <div class="cl-tag tag-fix">FIX</div>
         <ul class="cl-list">
-          <li>Fixed By Class and By Manufacturer filters not filtering results</li>
+          <li>Fixed By Class and By Manufacturer filters not filtering results (grouped view bypass bug)</li>
           <li>Fixed Carrier Class quick filter bypassing grouped view</li>
           <li>Fixed import screen not resetting after clearing hangar</li>
           <li>Renamed "Carrier Capable" to "Carrier Class" throughout</li>
@@ -2275,12 +2337,12 @@
         <div class="cl-date">Major update</div>
         <div class="cl-tag tag-new">NEW</div>
         <ul class="cl-list">
-          <li>Sort controls — cycle Name, Price, Crew, Cargo with direction toggle</li>
+          <li>Sort controls — cycle Name, Price, Crew, Cargo with separate direction toggle</li>
           <li>Multi-filter — select multiple subclasses simultaneously in By Class mode</li>
           <li>Cargo filter — filter by minimum SCU capacity</li>
           <li>Carrier Class quick filter</li>
           <li>Fleet value summary — total pledge value shown in header after hangar import</li>
-          <li>Hangar notes — add personal notes to owned ships, stored locally</li>
+          <li>Hangar notes — add personal notes to owned ships, stored locally, shown with ✎ indicator on card</li>
         </ul>
       </div>
 
